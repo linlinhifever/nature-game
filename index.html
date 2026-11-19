@@ -1,0 +1,201 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>自然守护者：抽象版</title><style>
+*{box-sizing:border-box;}
+body{margin:0;padding:0;font-family:sans-serif;background:#f0f7f4;color:#2c3e50;width:100vw;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
+.screen{display:none;width:90%;max-width:350px;margin:0 auto;padding-top:12vh;text-align:center;position:relative;z-index:10;}
+.screen.active{display:block;}
+h1{font-size:26px;margin:0 0 10px;color:#27ae60;text-shadow: 2px 2px 0px #fff;}
+h2{font-size:14px;font-weight:bold;color:#e67e22;margin:0 0 30px;animation:swing 2s infinite;}
+@keyframes swing{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.btn{background:#27ae60;color:#fff;border:none;padding:14px 0;font-size:16px;border-radius:25px;box-shadow:0 4px 6px rgba(39,174,96,.3);width:80%;margin:20px auto 0;font-weight:bold;display:block;transition:transform 0.1s;}
+.btn:active{transform:scale(.95);}
+.btn:disabled{background:#bdc3c7;box-shadow:none;}
+.header{font-size:14px;font-weight:bold;color:#34495e;margin-bottom:10px;background:#fff;display:inline-block;padding:4px 12px;border-radius:10px;}
+</style>
+<style>
+.crisis-card{background:#fff;border:2px dashed #e74c3c;border-radius:15px;padding:15px;margin:10px 0;transition:all 0.3s ease;position:relative;z-index:11;}
+.crisis-title{font-size:18px;color:#e74c3c;margin-bottom:5px;font-weight:bold;}
+.crisis-desc{font-size:12px;color:#7f8c8d;font-weight:bold;}
+.hint-text{font-size:12px;color:#8e44ad;font-weight:bold;margin-bottom:5px;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+.cards-container{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:10px;padding:10px 0;}
+.card{width:75px;height:110px;background:#fff;border-radius:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:box-shadow .2s;box-shadow:0 4px 8px rgba(0,0,0,.1);position:relative;overflow:hidden;}
+.card .icon{font-size:32px;margin-top:12px;transition:transform 0.3s;}
+.card .name{font-size:13px;font-weight:bold;color:#34495e;background:#ecf0f1;width:100%;padding:5px 0 1px;position:absolute;bottom:0;text-align:center;transition:all 0.2s;}
+.card .sci{font-size:9px;font-weight:normal;color:#7f8c8d;display:block;margin-top:2px;transform:scale(0.85);}
+.card.selected{box-shadow:0 12px 16px rgba(39,174,96,.4);border:2px solid #27ae60;animation:jelly 0.4s;}
+.card.selected .icon{transform:scale(1.3) rotate(10deg);}
+.card.selected .name{background:#27ae60;color:#fff;}
+.card.selected .sci{color:#e8f8f5;}
+@keyframes jelly{0%{transform:scale(1,1)}30%{transform:scale(1.15,0.85)}40%{transform:scale(0.85,1.15)}50%{transform:scale(1.1,0.9)}100%{transform:scale(1,1)}}
+.card.disabled{opacity:.3;pointer-events:none;filter:grayscale(100%);}
+.feedback{height:20px;font-size:15px;font-weight:bold;}
+.feedback.success{color:#27ae60;}
+.feedback.error{color:#e74c3c;}
+.result-title{font-size:22px;font-weight:bold;color:#8e44ad;}
+.result-score{font-size:40px;font-weight:bold;color:#27ae60;margin:10px 0;}
+.result-desc{font-size:14px;color:#7f8c8d;line-height:1.5;padding:0 10px;margin-bottom:20px;font-weight:bold;position:relative;z-index:2;}
+@keyframes shake{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(-8px,0) rotate(-2deg)}75%{transform:translate(8px,0) rotate(2deg)}}
+.shake{animation:shake 0.4s;}
+.screen-quake{animation:quake 0.5s ease-in-out;}
+@keyframes quake{0%,100%{transform:translate(0,0)}10%,90%{transform:translate(-10px,5px)}30%,70%{transform:translate(10px,-5px)}50%{transform:translate(-5px,-5px)}}
+.floating-emoji{position:fixed;font-size:40px;pointer-events:none;z-index:999;animation:floatUp 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+@keyframes floatUp{0%{transform:translateY(0) scale(0.5);opacity:1;}50%{transform:translateY(-100px) scale(1.5) rotate(20deg);opacity:1;}100%{transform:translateY(-200px) scale(1) rotate(-20deg);opacity:0;}}
+.canvas-container{position:relative;margin:0 auto 10px;width:150px;height:150px;border-radius:50%;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.2);z-index:1;}
+canvas{display:block;}
+</style></head><body>
+  <div id="screen-start" class="screen active">
+<div><h1>自然守护者</h1><h2>⚠️ 警告：前方生态圈精神状态极不稳定 ⚠️</h2></div>
+<button class="btn" onclick="startGame()">开始发疯 (3局)</button>
+</div>
+
+<div id="screen-game" class="screen">
+<div class="header">进度：<span id="progress">0</span> / 3</div>
+<div id="crisis-box" class="crisis-card">
+<div id="crisis-title" class="crisis-title"></div>
+<div id="crisis-desc" class="crisis-desc"></div>
+</div>
+<div id="hint" class="hint-text">👇 赶紧的，选一张牌救救场！</div>
+<div id="cards-area" class="cards-container"></div>
+<div id="feedback" class="feedback"></div>
+<button id="submit-btn" class="btn" onclick="submitCard()" disabled>就决定是你了</button>
+</div>
+
+<div id="screen-end" class="screen">
+<div><div class="result-title">生态圈状态报告</div>
+<div class="canvas-container"><canvas id="earthCanvas" width="150" height="150"></canvas></div>
+<div class="result-score"><span id="final-score">0</span> / 3</div>
+<div id="result-desc" class="result-desc"></div></div>
+<button class="btn" onclick="resetGame()">不玩了，回课堂</button>
+</div>
+<script>
+const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+function playTone(freq,type,duration,vol=0.1,slideTo){if(audioCtx.state==='suspended')audioCtx.resume();const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,audioCtx.currentTime);if(slideTo){osc.frequency.exponentialRampToValueAtTime(slideTo,audioCtx.currentTime+duration);}gain.gain.setValueAtTime(vol,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);}
+
+const soundClick=()=>playTone(800,'square',0.05,0.05,1200);
+const soundSuccess=()=>{playTone(600,'sine',0.1,0.1,800);setTimeout(()=>playTone(1000,'sine',0.4,0.1,1500),100);};
+const soundError=()=>{playTone(300,'sawtooth',0.4,0.1,100);setTimeout(()=>playTone(150,'square',0.5,0.1,50),200);};
+
+function spawnEmojis(emojiArray, count){for(let i=0;i<count;i++){setTimeout(()=>{const el=document.createElement('div');el.className='floating-emoji';el.innerText=emojiArray[Math.floor(Math.random()*emojiArray.length)];el.style.left=(20+Math.random()*60)+'vw';el.style.top=(50+Math.random()*20)+'vh';document.body.appendChild(el);setTimeout(()=>el.remove(),1500);}, i*100);}}
+function flashScreen(color){const flash=document.createElement('div');flash.style.cssText=`position:fixed;top:0;left:0;width:100vw;height:100vh;background:${color};opacity:0.5;z-index:9998;pointer-events:none;transition:opacity 0.4s;`;document.body.appendChild(flash);setTimeout(()=>{flash.style.opacity='0';setTimeout(()=>flash.remove(),400);},50);}
+function quakeScreen(){document.body.classList.add('screen-quake');setTimeout(()=>document.body.classList.remove('screen-quake'), 500);}
+
+const gameData=[
+{crisis:{title:"传粉者集体罢工",desc:"急求【传粉】大佬",tag:"传粉"},cards:[{name:"打工蜂",sci:"意大利蜂",icon:"🐝",tags:["传粉"]},{name:"孤寡青蛙",sci:"黑斑侧褶蛙",icon:"🐸",tags:["两栖"]},{name:"交际花",sci:"一年生草本",icon:"🌻",tags:["传粉"]},{name:"毒蘑菇",sci:"毒蝇伞",icon:"🍄",tags:["分解者"]}]},
+{crisis:{title:"水体重度污染",desc:"需要【分解者】胃口的",tag:"分解者"},cards:[{name:"狡猾狐",sci:"赤狐",icon:"🦊",tags:["捕食"]},{name:"吃土蚯蚓",sci:"陆正蚓",icon:"🪱",tags:["分解者"]},{name:"眼瞎鹰",sci:"金雕",icon:"🦅",tags:["会飞"]},{name:"水边芦",sci:"禾本芦苇",icon:"🌾",tags:["分解者"]}]},
+{crisis:{title:"森林快秃了",desc:"急需【生产者】植发",tag:"生产者"},cards:[{name:"老树",sci:"夏栎",icon:"🌳",tags:["生产者"]},{name:"冷血蛇",sci:"王锦蛇",icon:"🐍",tags:["捕食"]},{name:"熬夜鹰",sci:"雕鸮",icon:"🦉",tags:["夜行"]},{name:"墙头草",sci:"狗尾草",icon:"🌿",tags:["生产者"]}]}
+];
+
+let currentRound=0,solvedCount=0,selectedCardIndex=-1;
+  function drawEarth(score) {
+    const canvas = document.getElementById('earthCanvas');
+    const ctx = canvas.getContext('2d');
+    const px = 5; const cols = canvas.width/px; const rows = canvas.height/px;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i=0; i<cols; i++){
+        for(let j=0; j<rows; j++){
+            const dx = i - cols/2 + 0.5; const dy = j - rows/2 + 0.5;
+            if(dx*dx + dy*dy < (cols/2 - 1)*(cols/2 - 1)){
+                let c;
+                const isLand = Math.sin(i) * Math.cos(j) > 0;
+                if(score === 3) c = isLand ? '#2ecc71' : '#3498db';
+                else if(score === 2) c = isLand ? '#f4d03f' : '#5dade2'; 
+                else if(score === 1) c = isLand ? (Math.random()>0.5?'#d35400':'#7f8c8d') : '#2c3e50';
+                else c = isLand ? '#3e2723' : '#212121';
+                ctx.fillStyle = c; ctx.fillRect(i*px, j*px, px, px);
+            }
+        }
+    }
+}
+
+function startGame(){currentRound=0;solvedCount=0;document.getElementById('screen-start').classList.remove('active');document.getElementById('screen-game').classList.add('active');loadRound();}
+
+function loadRound(){
+    if(currentRound>=3){endGame();return;}
+    const data=gameData[currentRound];
+    document.getElementById('progress').innerText=solvedCount;
+    document.getElementById('crisis-title').innerText=data.crisis.title;
+    document.getElementById('crisis-desc').innerText=data.crisis.desc;
+    const feedbackEl=document.getElementById('feedback');
+    feedbackEl.innerText="";feedbackEl.className="feedback";
+    document.getElementById('hint').style.display="block";
+    const crisisBox=document.getElementById('crisis-box');
+    crisisBox.style.transform="scale(1)";crisisBox.style.borderColor="#e74c3c";crisisBox.style.backgroundColor="#fff";
+    const submitBtn=document.getElementById('submit-btn');
+    submitBtn.disabled=true;submitBtn.innerText="就决定是你了";
+    selectedCardIndex=-1;
+    const cardsArea=document.getElementById('cards-area');
+    cardsArea.innerHTML='';
+    data.cards.forEach((card,index)=>{
+        const cardEl=document.createElement('div');
+        cardEl.className='card';
+        cardEl.innerHTML=`<div class="icon">${card.icon}</div><div class="name">${card.name}<span class="sci">[${card.sci}]</span></div>`;
+        cardEl.onclick=()=>selectCard(index,cardEl);
+        cardsArea.appendChild(cardEl);
+    });
+}
+
+function selectCard(index,cardEl){
+    const cards=document.querySelectorAll('.card');
+    cards.forEach(c=>c.classList.remove('selected'));
+    cardEl.classList.add('selected');
+    selectedCardIndex=index;
+    document.getElementById('submit-btn').disabled=false;
+    document.getElementById('hint').style.display="none";
+    soundClick();
+    if(navigator.vibrate) navigator.vibrate(70);
+}
+
+function submitCard(){
+    if(selectedCardIndex===-1)return;
+    const data=gameData[currentRound];
+    const selectedCard=data.cards[selectedCardIndex];
+    const feedbackEl=document.getElementById('feedback');
+    const submitBtn=document.getElementById('submit-btn');
+    const crisisBox=document.getElementById('crisis-box');
+    const isCorrect=selectedCard.tags.includes(data.crisis.tag);
+
+    if(isCorrect){
+        soundSuccess();
+        if(navigator.vibrate) navigator.vibrate([100, 50, 150]); 
+        solvedCount++;
+        flashScreen('rgba(39, 174, 96, 0.4)');
+        spawnEmojis(['✨','🐮','666','绝了','稳','强啊'],5);
+        crisisBox.style.transform="scale(1.1) rotate(2deg)";crisisBox.style.borderColor="#27ae60";crisisBox.style.backgroundColor="#e8f8f5";
+        feedbackEl.innerText=`✅ 锁死！这波逻辑满分！`;feedbackEl.className="feedback success";
+        submitBtn.innerText="下一关...";submitBtn.disabled=true;
+        setTimeout(()=>{currentRound++;loadRound();},1800);
+    }else{
+        soundError();
+        if(navigator.vibrate) navigator.vibrate([150, 80, 150]); 
+        flashScreen('rgba(231, 76, 60, 0.5)');
+        quakeScreen();
+        spawnEmojis(['💀','寄','破防','？','别搞','危'],6);
+        crisisBox.classList.add('shake');crisisBox.style.borderColor="#c0392b";crisisBox.style.backgroundColor="#fadbd8";
+        feedbackEl.innerText=`❌ 离大谱！${selectedCard.name}跟这没关系啊！`;feedbackEl.className="feedback error";
+        submitBtn.innerText="硬着头皮继续...";submitBtn.disabled=true;
+        setTimeout(()=>{crisisBox.classList.remove('shake');},600);
+        setTimeout(()=>{currentRound++;loadRound();},2200);
+    }
+}
+
+function endGame(){
+    document.getElementById('screen-game').classList.remove('active');
+    document.getElementById('screen-end').classList.add('active');
+    document.getElementById('final-score').innerText=solvedCount;
+    drawEarth(solvedCount);
+    
+    let descText = "";
+    if(solvedCount===3) descText="生机勃发！你的生态学素养和精神状态一样超前，地球因为有你而绿意盎然。";
+    else if(solvedCount===2) descText="勉强及格。地球虽然还在转，但土地已经开始泛黄干涸，某些物种正悄悄消失。";
+    else if(solvedCount===1) descText="危！地表已经出现大面积黄褐色沟壑，水土流失严重，生态圈岌岌可危。";
+    else descText="寄了。地球已沦为灰败的死星废土。达尔文看了连夜撕了进化论。";
+    document.getElementById('result-desc').innerText = descText;
+}
+
+function resetGame(){
+    document.getElementById('screen-end').classList.remove('active');
+    document.getElementById('screen-start').classList.add('active');
+}
+</script>
+</body>
+</html>
